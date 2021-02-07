@@ -1,0 +1,15 @@
+{
+  "name": "sample-binding-wotfirestore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hidetak/binding-wotfirestore": "0.0.2",
+    "@node-wot/core": "^0.7.4"
+  }
+}

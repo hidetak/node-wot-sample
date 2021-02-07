@@ -52,15 +52,18 @@
                                 $("#update").html("")
                             }, 3000)
                         })
+                        // action
                         $("#resetButton").click(()=>{
                             thing.invokeAction("reset")
                         })
-                    });
-                });
+                    })
+                })
             } catch (err) {
-                console.error("Script error:", err);
+                console.error("Script error:", err)
             }
-        }).catch((err) => { console.error("Fetch error:", err); });
+        }).catch((err) => {
+            console.error("Fetch error:", err)
+        })
         
     </script>
 </body>

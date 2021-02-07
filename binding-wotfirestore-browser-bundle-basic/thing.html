@@ -1,0 +1,114 @@
+<html>
+<head>
+    <title>thing</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hidetak/binding-wotfirestore-browser-bundle@latest/dist/binding-wotfirestore-bundle.min.js"></script>
+    <script src="firestore-config.js"></script>
+</head>
+<body>
+    <h1>thing</h1>
+    <div>status: <span id="statusArea">stopped</span></div>
+    <div>count: <span id="countArea"><input id="countInput" type="text" value=""/><button id="countUpdate">update</button></span></div>
+    <script>
+
+        const Servient = Wot.Core.Servient
+        const WoTFirestoreServer = BindingWoTFirestore.WoTFirestoreServer
+        const WoTFirestoreCodec = BindingWoTFirestore.WoTFirestoreCodec
+
+        // create server
+        const server = new WoTFirestoreServer(firestoreConfig)
+
+        // create Servient add HTTP binding with port configuration
+        let servient = new Servient();
+        servient.addServer(server);
+
+        const codec = new WoTFirestoreCodec()
+        servient.addMediaType(codec)
+
+        let t
+
+        servient.start().then((WoT) => {
+            WoT.produce({
+                "@context": "https://www.w3.org/2019/wot/td/v1",
+                title: "MyCounter",
+                properties: {
+                    count: {
+                        type: "integer",
+                        observable: true,
+                        readOnly: false        
+                    }
+                },
+                actions: {
+                    increment: {
+                    description:
+                        'Incrementing counter value (with optional step parameter as uriVariable)',
+                    descriptions: {
+                        en: 'increment value',
+                        de: 'Zähler erhöhen',
+                        it: 'incrementare valore',
+                    },
+                    uriVariables: {
+                        step: { type: 'integer', minimum: 1, maximum: 250 },
+                    },
+                    },
+                    decrement: {
+                    description:
+                        'Decrementing counter value (with optional step parameter as uriVariable)',
+                    descriptions: {
+                        en: 'decrement value',
+                        de: 'Zähler verringern',
+                        it: 'decrementare valore',
+                    },
+                    uriVariables: {
+                        step: { type: 'integer', minimum: 1, maximum: 250 },
+                    },
+                    },
+                    reset: {
+                        description: 'Resetting counter value',
+                    }
+                },
+                events: {
+                    update: {
+                    description: 'change event',
+                    descriptions: {
+                        en: 'change event',
+                        de: 'Änderungsnachricht',
+                        it: 'resettare valore',
+                    },
+                    type: 'integer'
+                    }
+                }
+            }).then((thing) => {
+                t = thing
+                console.log("Produced " + thing.getThingDescription().title);
+                thing.writeProperty("count", 100)
+                thing.expose().then(() => {
+                    $("#statusArea").html("started")
+                    $("#countUpdate").click(()=>{
+                        let v = Number($("#countInput").val())
+                        thing.writeProperty("count", v)
+                        thing.emitEvent('update', v)
+                    })
+                    console.info(thing.getThingDescription().title + " ready");
+                    console.info("TD : " + JSON.stringify(thing.getThingDescription()));
+                    thing.readProperty("count").then((v) => {
+                        $("#countInput").val(v)
+                    });
+                    thing.observeProperty("count", (v) => {
+                        $("#countInput").val(v)
+                    })
+                    thing.setActionHandler('reset', () => {
+                        return new Promise( (resolve, reject) => {
+                            thing.writeProperty('count', 0)
+                            thing.emitEvent('update', 0)
+                            resolve()
+                        })
+                    })
+                });
+            });
+        });
+        
+    </script>
+</body>
+</html>

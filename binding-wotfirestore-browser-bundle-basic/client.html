@@ -1,0 +1,67 @@
+<html>
+<head>
+    <title>client</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hidetak/binding-wotfirestore-browser-bundle@latest/dist/binding-wotfirestore-bundle.min.js"></script>
+    <script src="firestore-config.js"></script>
+</head>
+<body>
+    <h1>client</h1>
+    <div>status: <span id="statusArea">stopped</span></div>
+    <div>count: <span id="count">no data</span></div>
+    <div>update: <span id="update"></span></div>
+    <div><button id="resetButton">reset</button></div>
+    <script>
+
+        const Servient = Wot.Core.Servient
+        const WoTFirestoreClientFactory = BindingWoTFirestore.WoTFirestoreClientFactory
+        const Helpers = Wot.Core.Helpers
+        const WoTFirestoreCodec = BindingWoTFirestore.WoTFirestoreCodec
+
+        // create Servient and add HTTP binding
+        let servient = new Servient();
+        const clientFactory = new WoTFirestoreClientFactory(firestoreConfig)
+        servient.addClientFactory(clientFactory);
+
+        const codec = new WoTFirestoreCodec()
+        servient.addMediaType(codec)
+
+        let t
+        
+        let wotHelper = new Helpers(servient);
+        wotHelper.fetch("wotfirestore://sample-browser-host/MyCounter").then(async (td) => {
+            // using await for serial execution (note 'async' in then() of fetch())
+            try {
+                servient.start().then((WoT) => {
+                    WoT.consume(td).then((thing) => {
+                        $("#statusArea").html("started")
+                        t = thing
+                        // obsesrve
+                        thing.observeProperty("count", (v) => {
+                            $("#count").html(v)
+                        })
+                        // read a property "string" and print the value
+                        thing.readProperty("count").then((v) => {
+                            $("#count").html(v)
+                        });
+                        // events
+                        thing.subscribeEvent("update", (v) => {
+                            $("#update").html(v)
+                            setTimeout(() => {
+                                $("#update").html("")
+                            }, 3000)
+                        })
+                        $("#resetButton").click(()=>{
+                            thing.invokeAction("reset")
+                        })
+                    });
+                });
+            } catch (err) {
+                console.error("Script error:", err);
+            }
+        }).catch((err) => { console.error("Fetch error:", err); });
+        
+    </script>
+</body>
+</html>
